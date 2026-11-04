@@ -1,0 +1,22 @@
+{
+  "name": "bidhub-leilao-service",
+  "version": "1.0.0",
+  "description": "BidHub - Microsserviço 1 (Leilões, MongoDB Atlas). Clean Architecture + Vertical Slice.",
+  "main": "src/api/server.js",
+  "private": true,
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "start": "node src/api/server.js",
+    "dev": "node --watch src/api/server.js",
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:arquitetura": "node --test test/architecture/dependency-rules.test.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "@azure/service-bus": "^7.10.0",
+    "express": "^5.3.0",
+    "mongodb": "^7.8.0",
+    "swagger-ui-express": "^5.0.1",
+    "yaml": "^2.9.1"
+  }
+}

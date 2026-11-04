@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BidHub - Eventos (AsyncAPI)</title>
+    <link rel="stylesheet" href="https://unpkg.com/@asyncapi/react-component@3.2.2/styles/default.min.css" />
+    <style>body { margin: 0; font-family: system-ui, sans-serif; } .fallback { padding: 16px; }</style>
+  </head>
+  <body>
+    <div id="asyncapi"></div>
+    <noscript><p class="fallback">Contrato bruto em <a href="/docs/eventos/asyncapi.yaml">asyncapi.yaml</a>.</p></noscript>
+    <script src="https://unpkg.com/@asyncapi/react-component@3.2.2/browser/standalone/index.js"></script>
+    <script>
+      AsyncApiStandalone.render(
+        { schema: { url: "/docs/eventos/asyncapi.yaml" }, config: { show: { sidebar: true } } },
+        document.getElementById("asyncapi")
+      );
+    </script>
+  </body>
+</html>

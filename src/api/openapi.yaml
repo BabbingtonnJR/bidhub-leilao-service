@@ -1,0 +1,225 @@
+openapi: 3.0.3
+info:
+  title: BidHub - Leilão Service
+  version: 1.0.0
+  description: |
+    Microsserviço 1 do BidHub (MongoDB Atlas). CRUD de leilões, lances e encerramento.
+    Ao encerrar um leilão, publica o evento `LeilaoEncerrado` na fila `leilao-encerrado`
+    do Azure Service Bus (contrato em [/docs/eventos](/docs/eventos)).
+
+    Alunos: André Gustavo, Babbingtonn Luiz, Gabriel Carmo, Marcel Araújo.
+tags:
+  - name: Leilões
+  - name: Lances
+  - name: Operação
+paths:
+  /leiloes:
+    get:
+      tags: [Leilões]
+      summary: Lista os leilões (feature listar-leiloes)
+      parameters:
+        - in: query
+          name: status
+          schema: { $ref: "#/components/schemas/StatusLeilao" }
+      responses:
+        "200":
+          description: Leilões em ordem de id
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Leilao" } }
+        "400": { $ref: "#/components/responses/Erro400" }
+    post:
+      tags: [Leilões]
+      summary: Cadastra um leilão (feature criar-leilao)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NovoLeilao" }
+      responses:
+        "201":
+          description: Leilão criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Leilao" }
+        "400": { $ref: "#/components/responses/Erro400" }
+        "422": { $ref: "#/components/responses/Erro422" }
+  /leiloes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Leilões]
+      summary: Consulta um leilão (feature buscar-leilao)
+      responses:
+        "200":
+          description: Leilão
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Leilao" }
+        "404": { $ref: "#/components/responses/Erro404" }
+    put:
+      tags: [Leilões]
+      summary: Altera dados e/ou status (feature atualizar-leilao)
+      description: |
+        Aceita os campos cadastrais e o status `agendado` ou `ao-vivo`.
+        O lance tem rota própria e o encerramento também; leilão encerrado não pode ser alterado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AtualizacaoLeilao" }
+      responses:
+        "200":
+          description: Leilão atualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Leilao" }
+        "400": { $ref: "#/components/responses/Erro400" }
+        "404": { $ref: "#/components/responses/Erro404" }
+        "422": { $ref: "#/components/responses/Erro422" }
+    delete:
+      tags: [Leilões]
+      summary: Exclui um leilão (feature excluir-leilao)
+      responses:
+        "200":
+          description: Leilão removido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  removido: { type: boolean, example: true }
+                  id: { type: integer, example: 3 }
+        "404": { $ref: "#/components/responses/Erro404" }
+  /leiloes/{id}/lances:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [Lances]
+      summary: Dá um lance (feature dar-lance)
+      description: |
+        O leilão precisa estar `ao-vivo` e o valor deve ser pelo menos `lanceAtual + incrementoMinimo`.
+        A gravação é condicional: se outro lance entrou entre a leitura e a gravação, responde 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [valor]
+              properties:
+                valor: { type: number, example: 35500 }
+      responses:
+        "200":
+          description: Lance aceito; leilão com o novo lance atual
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Leilao" }
+        "400": { $ref: "#/components/responses/Erro400" }
+        "404": { $ref: "#/components/responses/Erro404" }
+        "409": { $ref: "#/components/responses/Erro409" }
+        "422": { $ref: "#/components/responses/Erro422" }
+  /leiloes/{id}/encerramento:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [Leilões]
+      summary: Encerra o leilão e publica LeilaoEncerrado (feature encerrar-leilao)
+      responses:
+        "200":
+          description: Leilão encerrado e evento publicado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leilao: { $ref: "#/components/schemas/Leilao" }
+                  evento: { $ref: "#/components/schemas/LeilaoEncerrado" }
+        "404": { $ref: "#/components/responses/Erro404" }
+        "422": { $ref: "#/components/responses/Erro422" }
+  /health:
+    get:
+      tags: [Operação]
+      summary: Verifica se o serviço e o banco estão respondendo
+      responses:
+        "200": { description: Serviço pronto }
+        "503": { description: Banco indisponível }
+components:
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: { type: integer, minimum: 1, example: 1 }
+  schemas:
+    StatusLeilao:
+      type: string
+      enum: [ao-vivo, agendado, encerrado]
+    Leilao:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        lote: { type: string, example: "001" }
+        titulo: { type: string, example: "Óleo sobre tela, Retrato ao entardecer" }
+        categoria: { type: string, example: Arte }
+        vendedor: { type: string, example: Casa Meridian Leilões }
+        lanceInicial: { type: number, example: 18000 }
+        lanceAtual: { type: number, example: 34500 }
+        lanceMinimo: { type: number, example: 35500, description: lanceAtual + incrementoMinimo }
+        incrementoMinimo: { type: number, example: 1000 }
+        status: { $ref: "#/components/schemas/StatusLeilao" }
+        espectadores: { type: integer, example: 214 }
+        horario: { type: string, example: "Hoje, 19:00" }
+        imagem: { type: string, example: "🖼️" }
+        encerradoEm: { type: string, format: date-time, nullable: true }
+    NovoLeilao:
+      type: object
+      required: [lote, titulo, categoria, vendedor, lanceInicial, incrementoMinimo, horario]
+      properties:
+        lote: { type: string, example: "005" }
+        titulo: { type: string, example: "Relógio de bolso suíço, 1910" }
+        categoria: { type: string, example: Antiguidades }
+        vendedor: { type: string, example: Galeria Tempo Antigo }
+        lanceInicial: { type: number, example: 9000 }
+        incrementoMinimo: { type: number, example: 500 }
+        horario: { type: string, example: "Sexta, 18:00" }
+        status: { type: string, enum: [agendado, ao-vivo], default: agendado }
+        imagem: { type: string, example: "⌚" }
+    AtualizacaoLeilao:
+      type: object
+      properties:
+        lote: { type: string }
+        titulo: { type: string }
+        categoria: { type: string }
+        vendedor: { type: string }
+        incrementoMinimo: { type: number }
+        horario: { type: string }
+        imagem: { type: string }
+        status: { type: string, enum: [agendado, ao-vivo] }
+    LeilaoEncerrado:
+      type: object
+      properties:
+        tipo: { type: string, example: LeilaoEncerrado }
+        eventId: { type: string, format: uuid }
+        leilaoId: { type: integer, example: 1 }
+        categoria: { type: string, example: Arte }
+        vendedor: { type: string, example: Casa Meridian Leilões }
+        valorFinal: { type: number, example: 36500 }
+        encerradoEm: { type: string, format: date-time }
+    Erro:
+      type: object
+      properties:
+        erro: { type: string }
+  responses:
+    Erro400:
+      description: Dados de entrada inválidos (ValidacaoError)
+      content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } }
+    Erro404:
+      description: Leilão não encontrado (NaoEncontradoError)
+      content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } }
+    Erro409:
+      description: Outro lance foi registrado antes (ConflitoError)
+      content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } }
+    Erro422:
+      description: Regra de negócio violada (RegraDeNegocioError)
+      content: { application/json: { schema: { $ref: "#/components/schemas/Erro" } } }

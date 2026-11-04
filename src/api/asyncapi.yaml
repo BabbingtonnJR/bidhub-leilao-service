@@ -1,0 +1,71 @@
+asyncapi: 2.6.0
+info:
+  title: BidHub - Eventos de domínio
+  version: 1.0.0
+  description: |
+    Eventos publicados pelo Leilão Service no Azure Service Bus.
+    O Comissão Service consome `LeilaoEncerrado` e gera a comissão do leilão.
+
+    Alunos: André Gustavo, Babbingtonn Luiz, Gabriel Carmo, Marcel Araújo.
+servers:
+  azure:
+    url: "{namespace}.servicebus.windows.net"
+    protocol: amqp
+    description: Namespace Basic do Azure Service Bus
+    variables:
+      namespace:
+        default: bidhub-sb
+channels:
+  leilao-encerrado:
+    description: |
+      Fila com um evento por leilão encerrado. Entrega "pelo menos uma vez";
+      após 10 tentativas com falha a mensagem vai para a dead-letter queue.
+    publish:
+      operationId: publicarLeilaoEncerrado
+      summary: Leilão Service publica (EncerrarLeilaoUseCase -> ServiceBusEventPublisher)
+      message:
+        $ref: "#/components/messages/LeilaoEncerrado"
+    subscribe:
+      operationId: consumirLeilaoEncerrado
+      summary: Comissão Service consome (ServiceBusLeilaoEncerradoConsumer -> GerarComissaoUseCase)
+      message:
+        $ref: "#/components/messages/LeilaoEncerrado"
+components:
+  messages:
+    LeilaoEncerrado:
+      name: LeilaoEncerrado
+      title: Leilão encerrado
+      contentType: application/json
+      headers:
+        type: object
+        properties:
+          messageId:
+            type: string
+            description: Igual ao eventId; permite detectar mensagens duplicadas
+          subject:
+            type: string
+            const: LeilaoEncerrado
+      payload:
+        $ref: "#/components/schemas/LeilaoEncerrado"
+      examples:
+        - name: exemplo
+          payload:
+            tipo: LeilaoEncerrado
+            eventId: 7f9c3a52-3c1e-4b0d-9a35-2e1b6b0f8d11
+            leilaoId: 1
+            categoria: Arte
+            vendedor: Casa Meridian Leilões
+            valorFinal: 36500
+            encerradoEm: "2026-11-04T22:10:00.000Z"
+  schemas:
+    LeilaoEncerrado:
+      type: object
+      required: [tipo, eventId, leilaoId, categoria, vendedor, valorFinal, encerradoEm]
+      properties:
+        tipo: { type: string, const: LeilaoEncerrado }
+        eventId: { type: string, format: uuid }
+        leilaoId: { type: integer, minimum: 1 }
+        categoria: { type: string }
+        vendedor: { type: string }
+        valorFinal: { type: number, description: Último lance aceito, em reais }
+        encerradoEm: { type: string, format: date-time }
