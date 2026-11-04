@@ -112,12 +112,12 @@ Ele também confere que cada feature tem um único `*UseCase.js` e está ligada 
 ## Docker
 
 ```bash
-docker build -t <usuario-dockerhub>/bidhub-leilao-service:v1 .
+docker build -t babbingtonnjr/bidhub-leilao-service:v1 .
 docker login
-docker push <usuario-dockerhub>/bidhub-leilao-service:v1
+docker push babbingtonnjr/bidhub-leilao-service:v1
 
 # rodar a imagem localmente
-docker run --rm -p 3001:3001 --env-file .env <usuario-dockerhub>/bidhub-leilao-service:v1
+docker run --rm -p 3001:3001 --env-file .env babbingtonnjr/bidhub-leilao-service:v1
 ```
 
 O workflow `.github/workflows/ci.yml` roda `npm test` em cada push e, na `main`, publica `latest` e `sha-<commit>` no Docker Hub
@@ -125,14 +125,21 @@ O workflow `.github/workflows/ci.yml` roda `npm test` em cada push e, na `main`,
 
 ## Endereços publicados
 
-Preencher depois da implantação (os mesmos endereços vão na Seção 7.3 do arc42).
+Tudo na Azure (West US 2) e no MongoDB Atlas (São Paulo). Os mesmos endereços estão na Seção 7.3 do arc42.
 
 | Item | URL |
 |---|---|
-| Leilão Service | https://<leilao-service>.<regiao>.azurecontainerapps.io |
-| Swagger | https://<leilao-service>.<regiao>.azurecontainerapps.io/docs |
-| AsyncAPI (eventos) | https://<leilao-service>.<regiao>.azurecontainerapps.io/docs/eventos |
-| Imagem Docker | https://hub.docker.com/r/<usuario-dockerhub>/bidhub-leilao-service |
+| Front-end | https://ashy-sea-09b9cfb1e.3.azurestaticapps.net |
+| API Gateway (APIM) | https://bidhub-apim-bjr.azure-api.net/api (cabeçalho `Ocp-Apim-Subscription-Key`) |
+| BFF | https://bidhub-bff.happydesert-9360b05e.westus2.azurecontainerapps.io |
+| Swagger do BFF | https://bidhub-bff.happydesert-9360b05e.westus2.azurecontainerapps.io/docs |
+| Leilão Service | https://bidhub-leilao-service.happydesert-9360b05e.westus2.azurecontainerapps.io |
+| Swagger do Leilão Service | https://bidhub-leilao-service.happydesert-9360b05e.westus2.azurecontainerapps.io/docs |
+| Eventos (AsyncAPI) | https://bidhub-leilao-service.happydesert-9360b05e.westus2.azurecontainerapps.io/docs/eventos |
+| Comissão Service | https://bidhub-comissao-service.happydesert-9360b05e.westus2.azurecontainerapps.io |
+| Swagger do Comissão Service | https://bidhub-comissao-service.happydesert-9360b05e.westus2.azurecontainerapps.io/docs |
+| Function Calcular Comissão | https://bidhub-fn-bjr.azurewebsites.net/api/calcular-comissao (exige `?code=<chave>`) |
+| Imagens Docker | https://hub.docker.com/u/babbingtonnjr |
 
 ## Repositórios do projeto
 
